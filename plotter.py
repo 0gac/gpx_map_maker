@@ -28,7 +28,7 @@ def plottrack(gpx: tl.GpxReadout,
                           c=gpx.ele, cmap='winter',
                           **app_dict)
         handles, labels = plot.legend_elements(prop="colors", alpha=0.3)
-        ax.legend(handles, labels, loc=leg_pos, title="altitudine", prop={'size': 6})
+        ax.legend(handles, labels, loc=leg_pos, title="altitude", prop={'size': 6})
     else:
         ax.scatter(gpx.coordinate[:, 1], gpx.coordinate[:, 0],
                    **app_dict)
