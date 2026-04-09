@@ -29,9 +29,11 @@ Single-day hike:
 ```bash
 python gpx_map_maker.py -p examples/sigle_day/trek.gpx -bm -op ./examples/single_day
 ```
-| Track | Elevation | Heart Rate |
-|---|---|---|
-| ![](examples/single_day/track.png) | ![](examples/single_day/ele.png) | ![](examples/single_day/hr.png) |
+![](examples/single_day/track.png) 
+
+| Elevation | Heart Rate |
+|---|---|
+| ![](examples/single_day/ele.png) | ![](examples/single_day/hr.png) |
 
 Multi-day hike:
 ```bash
