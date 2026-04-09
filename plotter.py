@@ -7,31 +7,32 @@ import contextily as cx
 
 
 def plottrack(gpx: tl.GpxReadout,
-              outpath: str,
-              timeinput: np.ndarray = None,
+              outpath: str = "figure",
+              timestrings: np.ndarray = None,
               verbose=False,
               leg_pos="lower left",
               manual_img = None,
-              basemap_zoom = None):
+              basemap_zoom = None,
+              **kwargs):
 
     fig, ax = plt.subplots()
 
     if basemap_zoom is not None:
         app_dict = {'s': 3, 'alpha': .2}
-    else: 
+    else:
         app_dict = {'s': 5, 'alpha': 1}
 
     # plotting of the route, if present w elevation color map
     if gpx.numele != 0:
         plot = ax.scatter(gpx.coordinate[:, 1], gpx.coordinate[:, 0],
-                          c=gpx.ele, cmap='winter', 
+                          c=gpx.ele, cmap='winter',
                           **app_dict)
         handles, labels = plot.legend_elements(prop="colors", alpha=0.3)
         ax.legend(handles, labels, loc=leg_pos, title="altitudine", prop={'size': 6})
     else:
         ax.scatter(gpx.coordinate[:, 1], gpx.coordinate[:, 0],
                    **app_dict)
-    
+
     if basemap_zoom is not None:
         cx.add_basemap(ax, source=cx.providers.OpenTopoMap, zoom=basemap_zoom, crs='EPSG:4326', attribution_size=5, interpolation = 'none')
 
@@ -53,8 +54,8 @@ def plottrack(gpx: tl.GpxReadout,
 
     # plotting of the time input points
     count_images = 0
-    if timeinput is not None:
-        timeinput = np.array([datetime.time.fromisoformat(x) for x in timeinput])
+    if timestrings is not None:
+        timeinput = np.array([datetime.time.fromisoformat(x) for x in timestrings])
 
         for ts in timeinput:
             ubtime = datetime.time(hour=ts.hour, minute=ts.minute, second=59)
@@ -103,7 +104,7 @@ def plottrack(gpx: tl.GpxReadout,
     return count_images
 
 
-def plotmultiday(gpxs: list, outpath: str, verbose=False, basemap_zoom=None):
+def plotmultiday(gpxs: list, outpath: str = "fig_multiday", verbose=False, basemap_zoom=None, **kwargs):
     tracks = []
     tracks_ele = []
     tracks_extremes = []
@@ -120,18 +121,18 @@ def plotmultiday(gpxs: list, outpath: str, verbose=False, basemap_zoom=None):
         left=False,
         labelbottom=False,
         labelleft=False
-    )    
+    )
 
     if basemap_zoom is not None:
         app_dict = {'s': 3, 'alpha': .2}
-    else: 
+    else:
         app_dict = {'s': 5, 'alpha': 1}
 
     counter = 0
     for t, e in zip(tracks, tracks_ele):
         ax.scatter(t[:, 1], t[:, 0], c=e, cmap="winter", **app_dict)
         counter += 1
-    
+
     if basemap_zoom is not None:
         cx.add_basemap(ax, source=cx.providers.OpenTopoMap, zoom=basemap_zoom, crs='EPSG:4326', attribution_size=5, interpolation = 'none')
 
@@ -182,7 +183,7 @@ def plotmultiday(gpxs: list, outpath: str, verbose=False, basemap_zoom=None):
     return 0
 
 
-def plothr(gpx: tl.GpxReadout, outpath: str):
+def plothr(gpx: tl.GpxReadout, outpath: str = "hr_figure", **kwargs):
     if gpx.numhr != 0:
         fig, ax = plt.subplots()
         ax.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: gpx.convert_elap(x)))
@@ -198,7 +199,7 @@ def plothr(gpx: tl.GpxReadout, outpath: str):
         return -1
 
 
-def plotele(gpx: tl.GpxReadout, outpath: str):
+def plotele(gpx: tl.GpxReadout, outpath: str = "ele_figure", **kwargs):
     if gpx.numele != 0:
         fig, ax = plt.subplots()
         ax.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: gpx.convert_elap(x)))
@@ -212,4 +213,3 @@ def plotele(gpx: tl.GpxReadout, outpath: str):
         return 0
     else:
         return -1
-

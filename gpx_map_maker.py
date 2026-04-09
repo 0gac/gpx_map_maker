@@ -4,16 +4,35 @@ import plotter as pl
 import tools as tl
 
 
-def main():
+def parse_cmdline():
 
-    multiday = False
+    out = {}
+
+    out["multiday"] = False
 
     args = tl.parse_args(sys.argv)
+
+    if "h" in args:
+        print("""
+usage: gpx_map_maker.py -p <file> [options]
+
+options:
+-p  <file> [file ...]   Input file(s). Multiple files treated as a multiday hike.
+-op <file>              Output path. (default: "figure")
+-t  <str> [str ...]     Markers will be added to the position corresponding to the timestamps here indicated.
+-lp <word> [word ...]   Legend position (e.g. lower left, upper right). (default: lower left)
+-mi <int>               Manual positioning of the markers on the map.
+-bm [zoom]              Basemap zoom level. If omitted the background is white. If [zoom] is omitted: 15 (single day), 14 (multiday).
+-v                      Verbose output.
+-h                      Show this message and exit.
+              """)
+        return None
+
     # input path
     if "p" in args:
         if len(args["p"]) != 1:
-            multiday = True
-        path = args["p"]
+            out["multiday"] = True
+        out["path"] = args["p"]
     else:
         print("No input file")
         return -1
@@ -23,81 +42,75 @@ def main():
         if len(args["op"]) != 1:
             print("Too many output paths")
             return -1
-        outpath = args["op"][0]
+        out["outpath"] = args["op"][0]
     else:
-        outpath = ""
+        out["outpath"] = ""
 
     # time strings
     if "t" in args:
-        timestrings = args["t"]
+        out["timestrings"] = args["t"]
     else:
-        timestrings = []
+        out["timestrings"] = []
 
     # verbose
     if "v" in args:
-        verbose = True
+        out["verbose"] = True
     else:
-        verbose = False
+        out["verbose"] = False
 
     # legend position: lower/upper left/right
     if "lp" in args:
-        leg_pos = ""
+        out["leg_pos"] = ""
         for w in args["lp"]:
-            leg_pos += w
-            leg_pos += " "
-        leg_pos = leg_pos[:-1]
+            out["leg_pos"] += w
+            out["leg_pos"] += " "
+        out["leg_pos"] = leg_pos[:-1]
     else:
-        leg_pos = "lower left"
+        out["leg_pos"] = "lower left"
 
     # manual addition of points on the track
     if "mi" in args:
         assert len(args["mi"]) == 1
-        manual_img = int(args["mi"][0])
+        out["manual_img"] = int(args["mi"][0])
     else:
-        manual_img = None
+        out["manual_img"] = None
 
     # basemap
     if "bm" in args:
         if len(args["bm"]) == 1:
-            basemap_zoom = int(args["bm"][0])
+            out["basemap_zoom"] = int(args["bm"][0])
         elif len(args["bm"]) == 0:
-            if multiday:
-                basemap_zoom = 14
+            if out["multiday"]:
+                out["basemap_zoom"] = 14
             else:
-                basemap_zoom = 15
+                out["basemap_zoom"] = 15
         else:
             print("Too many basemap zoom values")
             return -1
     else:
-        basemap_zoom = None
+        out["basemap_zoom"] = None
 
-    # execution
-    if not multiday:
-        gpx = tl.GpxReadout(path[0])
-        pl.plottrack(
-            gpx,
-            outpath,
-            timeinput=timestrings,
-            verbose=verbose,
-            leg_pos=leg_pos,
-            manual_img=manual_img,
-            basemap_zoom=basemap_zoom,
-        )
-        hashr = 0
-        hasele = 0
-        print(gpx.numhr)
-        print(gpx.numele)
+    return out
+
+
+def main():
+
+    opt_dict = parse_cmdline()
+    # in case of -h
+    if opt_dict is None:
+        return
+
+    if not opt_dict["multiday"]:
+        gpx = tl.GpxReadout(opt_dict["path"][0])
+        pl.plottrack(gpx, **opt_dict)
         if gpx.numhr != 0:
-            pl.plothr(gpx, outpath)
-            hashr = 1
+            pl.plothr(gpx, **opt_dict)
         if gpx.numele != 0:
-            pl.plotele(gpx, outpath)
-            hasele = 1
-        return hashr, hasele
+            pl.plotele(gpx, **opt_dict)
 
     else:
-        gpxs = [tl.GpxReadout(p) for p in path]
-        pl.plotmultiday(gpxs, outpath, verbose=verbose, basemap_zoom=basemap_zoom)
+        gpxs = [tl.GpxReadout(p) for p in opt_dict["path"]]
+        pl.plotmultiday(gpxs, **opt_dict)
 
 
 if __name__ == "__main__":

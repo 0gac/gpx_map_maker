@@ -6,6 +6,46 @@ import numpy as np
 
 
 class GpxReadout:
+
+    def add_position_point(self, regex_res):
+        self.numpoints += 1
+        self.coordinate.append([float(regex_res.group(1)), float(regex_res.group(2))])
+        if self.verbose and self.numpoints % 1000 == 0:
+            sys.stdout.write(str(self.numpoints) + "\r")
+            sys.stdout.flush()
+
+    def add_time_point(self, regex_res):
+        self.numtime += 1
+        if self.numtime != self.numpoints:
+            for i in range(self.numpoints - self.numtime):
+                self.times.append(
+                    datetime.time.fromisoformat("00:00:00")
+                )
+                self.days.append(
+                    datetime.datetime.fromisoformat("1970-01-01")
+                )
+            self.numtime = self.numpoints
+        time_obj = datetime.time.fromisoformat(regex_res.group(2))
+        day_obj = datetime.datetime.fromisoformat(regex_res.group(1))
+        self.times.append(time_obj)
+        self.days.append(day_obj)
+
+    def add_hr_point(self, regex_res):
+        self.numhr += 1
+        if self.numhr != self.numpoints:
+            for i in range(self.numpoints - self.numhr):
+                self.hr.append(np.nan)
+            self.numhr = self.numpoints
+        self.hr.append(int(regex_res.group(1)))
+
+    def add_ele_point(self, regex_res):
+        self.numele += 1
+        if self.numele != self.numpoints:
+            for i in range(self.numpoints - self.numele):
+                self.ele.append(None)
+            self.numele = self.numpoints
+        self.ele.append(int(regex_res.group(1)))
+
     def __init__(self, filepath: str):
         self.coordinate_raw = []
         self.coordinate = []
@@ -18,67 +58,35 @@ class GpxReadout:
         self.numtime = 0
         self.numele = 0
         self.ismultiday = True
+        self.verbose = False
+
         # readout of the gpx file
+        point_re = re.compile(r"\s*<trkpt\slat=\"([0-9]{2}.[0-9]*)\"\slon=\"([0-9]{2}.[0-9]*)\">\s*")
+        time_re  = re.compile(r"\s*<time>([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}\:[0-9]{2}:[0-9]{2})\.000Z</time>\s*")
+        hr_re    = re.compile(r"\s*<ns3:hr>([0-9]+)</ns3:hr>\s*")
+        ele_re   = re.compile(r"\s*<ele>([0-9]+)(\.[0-9]+)?</ele>\s*")
         with open(filepath, "r") as file:
             intopoints = False
             for line in file:
                 if not intopoints:
                     if re.match(r"\s*<trk>\s*", line) is not None:
                         intopoints = True
-                else:
-                    testpoint = re.match(
-                        r"\s*<trkpt\slat=\"([0-9]{2}.[0-9]*)\"\slon=\"([0-9]{2}.[0-9]*)\">\s*",
-                        line,
-                    )
-                    if testpoint is not None:
-                        self.numpoints += 1
-                        self.coordinate.append(
-                            [float(testpoint.group(1)), float(testpoint.group(2))]
-                        )
-                        if self.numpoints % 1000 == 0:
-                            sys.stdout.write(str(self.numpoints) + "\r")
-                            sys.stdout.flush()
-                        continue
-
-                    testtime = re.match(
-                        r"\s*<time>([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2}\:[0-9]{2}:[0-9]{2})\.000Z</time>\s*",
-                        line,
-                    )
-                    if testtime is not None:
-                        self.numtime += 1
-                        if self.numtime != self.numpoints:
-                            for i in range(self.numpoints - self.numtime):
-                                self.times.append(
-                                    datetime.time.fromisoformat("00:00:00")
-                                )
-                                self.days.append(
-                                    datetime.datetime.fromisoformat("1970-01-01")
-                                )
-                            self.numtime = self.numpoints
-                        time_obj = datetime.time.fromisoformat(testtime.group(2))
-                        day_obj = datetime.datetime.fromisoformat(testtime.group(1))
-                        self.times.append(time_obj)
-                        self.days.append(day_obj)
-                        continue
-
-                    testhr = re.match(r"\s*<ns3:hr>([0-9]+)</ns3:hr>\s*", line)
-                    if testhr is not None:
-                        self.numhr += 1
-                        if self.numhr != self.numpoints:
-                            for i in range(self.numpoints - self.numhr):
-                                self.hr.append(np.nan)
-                            self.numhr = self.numpoints
-                        self.hr.append(int(testhr.group(1)))
-                        continue
-
-                    testele = re.match(r"\s*<ele>([0-9]+)(\.[0-9]+)?</ele>\s*", line)
-                    if testele is not None:
-                        self.numele += 1
-                        if self.numele != self.numpoints:
-                            for i in range(self.numpoints - self.numele):
-                                self.ele.append(None)
-                            self.numele = self.numpoints
-                        self.ele.append(int(testele.group(1)))
+                    continue
+                testpoint = point_re.match(line)
+                if testpoint is not None:
+                    self.add_position_point(testpoint)
+                    continue
+                testtime = time_re.match(line)
+                if testtime is not None:
+                    self.add_time_point(testtime)
+                    continue
+                testhr = hr_re.match(line)
+                if testhr is not None:
+                    self.add_hr_point(testhr)
+                    continue
+                testele = ele_re.match(line)
+                if testele is not None:
+                    self.add_ele_point(testele)
 
             # check if the number of points is consistent for the last cycles
             if self.numtime != self.numpoints:
@@ -124,16 +132,16 @@ class GpxReadout:
 
     def get_extremes(self):
         startcoords = [
-            self.coordinate[self.times == min(self.times), 0],
-            self.coordinate[self.times == min(self.times), 1],
+            self.coordinate[self.times == min(self.times), 0][0],
+            self.coordinate[self.times == min(self.times), 1][0],
         ]
         endcoords = [
-            self.coordinate[self.times == max(self.times), 0],
-            self.coordinate[self.times == max(self.times), 1],
+            self.coordinate[self.times == max(self.times), 0][0],
+            self.coordinate[self.times == max(self.times), 1][0],
         ]
         extele = [
-            self.ele[self.times == min(self.times)],
-            self.ele[self.times == max(self.times)],
+            self.ele[self.times == min(self.times)][0],
+            self.ele[self.times == max(self.times)][0],
         ]
         exttimes = [min(self.times), max(self.times)]
         if self.ismultiday:
