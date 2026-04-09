@@ -29,22 +29,16 @@ Single-day hike:
 ```bash
 python gpx_map_maker.py -p examples/sigle_day/trek.gpx -bm -op ./examples/single_day
 ```
-<div style="width: 60%;">
-
 | Track | Elevation | Heart Rate |
 |---|---|---|
 | ![](examples/single_day/track.png) | ![](examples/single_day/ele.png) | ![](examples/single_day/hr.png) |
-
-</div>
 
 Multi-day hike:
 ```bash
 python gpx_map_maker.py -p examples/multi_day/day1.gpx examples/multi_day/day2.gpx examples/multi_day/day3.gpx -bm 13 -op ./examples/multi_day/
 ```
 
-<div align="center">
 ![](examples/multi_day/multidaytrack.png)
-</div>
 
 Run `python gpx_map_maker.py -h` for the full list of options.
 
