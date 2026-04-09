@@ -142,7 +142,7 @@ def plotmultiday(gpxs: list, outpath: str = "fig_multiday", verbose=False, basem
         ax.scatter(e['endcoords'][1], e['endcoords'][0], s=60, c='k')
         # adding "notte numero " annotation
         if counter != len(tracks_extremes) - 1:
-            label = "Notte " +\
+            label = "Camp " +\
                     str(counter + 1) +\
                     "\n" + str(e['extdays'][1].day) +\
                     "/" + str(e['extdays'][1].month) +\
